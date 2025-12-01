@@ -4,9 +4,6 @@ from qiskit_aer import Aer
 from qiskit import transpile
 from math import pi, sqrt
 
-# ----------------------------
-# Random QOTP key generation
-# ----------------------------
 def random_qotp_keys(n):
     x = [random.randint(0,1) for _ in range(n)]
     z = [random.randint(0,1) for _ in range(n)]
@@ -19,9 +16,6 @@ def apply_qotp(qc, x, z):
         if z[i] == 1:
             qc.z(i)
 
-# ----------------------------
-# Your Grover oracle + diffuser
-# ----------------------------
 def oracle_101(qc):
     qc.x(1)
     qc.h(2)
@@ -38,44 +32,39 @@ def diffuser(qc):
     qc.x(range(3))
     qc.h(range(3))
 
-# ----------------------------
-# Build encrypted Grover circuit
-# ----------------------------
+
 N = 8
 n = 3
 iters = int(pi/4 * sqrt(N))
 
 qc = QuantumCircuit(n, n)
-
-# 1. Generate random QOTP keys
 x_keys, z_keys = random_qotp_keys(n)
 
-# 2. Encrypt initial state
+# encrypt
 apply_qotp(qc, x_keys, z_keys)
 
-# 3. Grover iterations
+# Grovers
 qc.h(range(n))
 for _ in range(iters):
     oracle_101(qc)
     diffuser(qc)
 
-# 4. Decrypt before measurement: apply inverse pad
-# inverse of X^x Z^z is Z^z X^x
+# Decrypt clifford gates
 for i in range(n):
     if z_keys[i] == 1:
         qc.z(i)
     if x_keys[i] == 1:
         qc.x(i)
 
-# 5. Measure
+# Measure
 qc.measure(range(n), list(reversed(range(n))))
 
-# ----------------------------
-# Run simulation
-# ----------------------------
+# Run the program
 backend = Aer.get_backend("aer_simulator")
 qc_t = transpile(qc, backend)
 result = backend.run(qc_t, shots=1024).result()
 counts = result.get_counts()
 
 print("Encrypted Grover counts:", counts)
+print(qc.draw("text"))
+
