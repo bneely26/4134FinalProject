@@ -1,1 +1,4 @@
 using Qskit
+run the following commands in the terminal on linux for the script to run.
+pip3 install qiskit
+pip3 install qiskit-aer
