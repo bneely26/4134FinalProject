@@ -1,8 +1,10 @@
 from qiskit import QuantumCircuit, QuantumRegister
 from qiskit_aer import Aer
-from qiskit_aer.noise import NoiseModel, depolarizing_error, ReadoutError
+from qiskit_aer.noise import NoiseModel, depolarizing_error, ReadoutError, thermal_relaxation_error
 import matplotlib.pyplot as plt
 import random
+import csv
+
 
 def grover():
     qreg = QuantumRegister(3, "q")
@@ -120,22 +122,35 @@ def print_counts(title, counts):
 def create_noise_model():
     noise_model = NoiseModel()
     
-    p_gate1 = 0.001
-    p_gate2 = 0.01 
+    # creating the error rates for all gates
+    p_gate1 = 0.001 # .1% for single qubit gates
+    p_gate2 = 0.01  # 1% for multi qubit gates
+    p_meas = 0.02 #2% error for readout
     
-    # Depolarizing errors for gates
+    T1s = [60e-6] * 5  # 60 microseconds
+    T2s = [100e-6] * 5 # 100 microseconds
+
     error_gate1 = depolarizing_error(p_gate1, 1)
     error_gate2 = depolarizing_error(p_gate2, 2)
+    error_1q_thermal = [thermal_relaxation_error(t1, t2, 50e-9)
+                        for t1, t2 in zip(T1s, T2s)]
+    error_2q_thermal = [thermal_relaxation_error(t1, t2, 300e-9)
+                        for t1, t2 in zip(T1s, T2s)]
     
-    # Add errors to single-qubit gates
+    # Add errors to single quibit gates
     noise_model.add_all_qubit_quantum_error(error_gate1, ['h', 'x', 't', 'tdg'])
+    # Add thermal errors to single qubit gates
+    for i, err in enumerate(error_1q_thermal):
+        noise_model.add_quantum_error(err, ['h', 'x', 't', 'tdg'], [i])
     
-    # Add errors to two-qubit gates
+    # Add errors to control not gate
     noise_model.add_all_qubit_quantum_error(error_gate2, ['cx'])
+    # Add thermal errors to cx
+    for i in range(len(T1s) - 1):
+        err2q = error_2q_thermal[i].tensor(error_2q_thermal[i+1])
+        noise_model.add_quantum_error(err2q, ['cx'], [i, i+1])
     
-    # Readout error (measurement errors)
-    # Probability of flipping 0->1 and 1->0
-    p_meas = 0.02
+    # adding readout error on measurement
     readout_error = ReadoutError([[1 - p_meas, p_meas], [p_meas, 1 - p_meas]])
     noise_model.add_all_qubit_readout_error(readout_error)
     
