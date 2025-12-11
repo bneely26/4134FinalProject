@@ -10,9 +10,11 @@ def grover():
     qreg = QuantumRegister(3, "q")
     qc = QuantumCircuit(qreg)
     qc.h(qreg)
+
     # Oracle
     qc.x(qreg[1])
     qc.h(qreg[2])
+
     # CCX
     qc.h(qreg[2])
     qc.cx(qreg[1], qreg[2])
@@ -29,13 +31,16 @@ def grover():
     qc.cx(qreg[0], qreg[1])
     qc.t(qreg[2])
     qc.h(qreg[2])
+
     #Undo
     qc.h(qreg[2])
     qc.x(qreg[1])
+
     #Diffuser
     qc.h(qreg)
     qc.x(qreg)
     qc.h(qreg[2])
+
     # CCX
     qc.h(qreg[2])
     qc.cx(qreg[1], qreg[2])
@@ -52,6 +57,7 @@ def grover():
     qc.cx(qreg[0], qreg[1])
     qc.t(qreg[2])
     qc.h(qreg[2])
+
     #Undo
     qc.h(qreg[2])
     qc.x(qreg)
@@ -122,13 +128,13 @@ def print_counts(title, counts):
 def create_noise_model():
     noise_model = NoiseModel()
     
-    # creating the error rates for all gates
+    # eror rates
     p_gate1 = 0.001 # .1% for single qubit gates
     p_gate2 = 0.01  # 1% for multi qubit gates
     p_meas = 0.02 #2% error for readout
     
-    T1s = [60e-6] * 5  # 60 microseconds
-    T2s = [100e-6] * 5 # 100 microseconds
+    T1s = [60e-6] * 5
+    T2s = [100e-6] * 5
 
     error_gate1 = depolarizing_error(p_gate1, 1)
     error_gate2 = depolarizing_error(p_gate2, 2)
@@ -184,8 +190,7 @@ def create_plots(decrypted_ideal, decrypted_noisy):
     fig = plt.figure(figsize=(14, 8))
     fig.suptitle("Ideal vs Noisy Results", fontsize=18, fontweight="normal")
 
-
-    # Plot 1: Ideal Bar Chart
+    # ideal chart
     ax1 = fig.add_subplot(2, 2, 1)
     ax1.bar(list(decrypted_ideal.keys()), list(decrypted_ideal.values()), color='black')
     ax1.set_title("Ideal")
@@ -194,7 +199,7 @@ def create_plots(decrypted_ideal, decrypted_noisy):
     ax1.spines["top"].set_visible(False)
     ax1.spines["right"].set_visible(False)
 
-    # Plot 2: Noisy Bar Chart
+    # noisy chart
     ax2 = fig.add_subplot(2, 2, 2)
     ax2.bar(list(decrypted_noisy.keys()), list(decrypted_noisy.values()), color='black')
     ax2.set_title("Noisy")
@@ -203,7 +208,7 @@ def create_plots(decrypted_ideal, decrypted_noisy):
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
-    # Plot 3: Line Plot (Ideal, Noisy, Fidelity)
+    # ideal, noisy, fidelity chart
     ax3 = fig.add_subplot(2, 1, 2)
     ax3.plot(df["run"], df["Ideal"], linestyle=':', label="Ideal", linewidth=2, color='black')
     ax3.plot(df["run"], df["Noisy"], linestyle='--', label="Noisy", linewidth=2, color='black')
@@ -212,18 +217,13 @@ def create_plots(decrypted_ideal, decrypted_noisy):
     ax3.set_xlabel("Run Number")
     ax3.set_ylabel("Probability of Success")
 
-    # Clean legend (no title)
+    # legend
     ax3.legend(frameon=False, title=None)
 
-    # Clean classic theme
     ax3.spines["top"].set_visible(False)
     ax3.spines["right"].set_visible(False)
 
-    # -------------------------------------------------------
-    # Tight layout for publication
-    # -------------------------------------------------------
     plt.tight_layout()
-
     plt.show()
 
 def main():
