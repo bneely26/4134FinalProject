@@ -3,7 +3,7 @@ from qiskit_aer import Aer
 from qiskit_aer.noise import NoiseModel, depolarizing_error, ReadoutError, thermal_relaxation_error
 import matplotlib.pyplot as plt
 import random
-import csv
+import pandas as pd
 
 
 def grover():
@@ -156,6 +156,76 @@ def create_noise_model():
     
     return noise_model
 
+def create_plots(decrypted_ideal, decrypted_noisy):
+    all_data = pd.read_csv("newData.csv")
+
+    ideal = all_data.iloc[:, 0]
+    noisy = all_data.iloc[:, 1]
+    fidelity = all_data.iloc[:, 2]
+
+    df = pd.DataFrame({
+        "run": range(1, len(ideal) + 1),
+        "Ideal": ideal,
+        "Noisy": noisy,
+        "Fidelity": fidelity
+    })
+
+    # Global research-style formatting
+    plt.rcParams.update({
+        "font.size": 14,
+        "axes.labelsize": 14,
+        "axes.titlesize": 16,
+        "figure.titlesize": 20,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "axes.linewidth": 1.5,
+    })
+
+    fig = plt.figure(figsize=(14, 8))
+    fig.suptitle("Ideal vs Noisy Results", fontsize=18, fontweight="normal")
+
+
+    # Plot 1: Ideal Bar Chart
+    ax1 = fig.add_subplot(2, 2, 1)
+    ax1.bar(list(decrypted_ideal.keys()), list(decrypted_ideal.values()), color='black')
+    ax1.set_title("Ideal")
+    ax1.set_xlabel("State")
+    ax1.set_ylabel("Counts")
+    ax1.spines["top"].set_visible(False)
+    ax1.spines["right"].set_visible(False)
+
+    # Plot 2: Noisy Bar Chart
+    ax2 = fig.add_subplot(2, 2, 2)
+    ax2.bar(list(decrypted_noisy.keys()), list(decrypted_noisy.values()), color='black')
+    ax2.set_title("Noisy")
+    ax2.set_xlabel("State")
+    ax2.set_ylabel("Counts")
+    ax2.spines["top"].set_visible(False)
+    ax2.spines["right"].set_visible(False)
+
+    # Plot 3: Line Plot (Ideal, Noisy, Fidelity)
+    ax3 = fig.add_subplot(2, 1, 2)
+    ax3.plot(df["run"], df["Ideal"], linestyle=':', label="Ideal", linewidth=2, color='black')
+    ax3.plot(df["run"], df["Noisy"], linestyle='--', label="Noisy", linewidth=2, color='black')
+    ax3.plot(df["run"], df["Fidelity"], label="Fidelity", linewidth=2, color='black')
+
+    ax3.set_xlabel("Run Number")
+    ax3.set_ylabel("Probability of Success")
+
+    # Clean legend (no title)
+    ax3.legend(frameon=False, title=None)
+
+    # Clean classic theme
+    ax3.spines["top"].set_visible(False)
+    ax3.spines["right"].set_visible(False)
+
+    # -------------------------------------------------------
+    # Tight layout for publication
+    # -------------------------------------------------------
+    plt.tight_layout()
+
+    plt.show()
+
 def main():
     backend = Aer.get_backend("aer_simulator")
     shots = 4096
@@ -221,22 +291,8 @@ def main():
     print(f"Noisy probability: {noisy_prob} ({decrypted_noisy.get(target_state, 0)}/{shots})")
     print(f"Fidelity loss: {(ideal_prob - noisy_prob)} ({((ideal_prob - noisy_prob)/ideal_prob * 100)}%)")
 
-    # Plot simple bar chart
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-    fig.suptitle('Ideal vs Noisy Results')
-    
-    ax1.bar(decrypted_ideal.keys(), decrypted_ideal.values())
-    ax1.set_title('Ideal')
-    ax1.set_xlabel('State')
-    ax1.set_ylabel('Count')
-    
-    ax2.bar(decrypted_noisy.keys(), decrypted_noisy.values())
-    ax2.set_title('Noisy')
-    ax2.set_xlabel('State')
-    ax2.set_ylabel('Count')
-    
-    plt.tight_layout()
-    plt.show()
+    # create and show plots
+    create_plots(decrypted_ideal, decrypted_noisy)
 
 if __name__ == "__main__":
     main()
