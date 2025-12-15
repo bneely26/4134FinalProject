@@ -4,10 +4,7 @@ from qiskit_aer.noise import NoiseModel, depolarizing_error, ReadoutError, therm
 import matplotlib.pyplot as plt
 import random
 import math
-import warnings
 import pandas as pd
-warnings.filterwarnings('ignore')
-
 
 
 def grover_iteration(qc, qreg):
@@ -317,6 +314,7 @@ def main():
 
     # create and show plots
     create_plots(decrypted_ideal, decrypted_noisy)
+
 
 if __name__ == "__main__":
     main()
