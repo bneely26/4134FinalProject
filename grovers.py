@@ -2,56 +2,69 @@ from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit_aer import Aer
 import random
 
+def grover_iteration(qc, qreg):
+    # ----- Oracle -----
+    qc.x(qreg[1])
+    qc.h(qreg[2])
+
+    # CCX (Toffoli decomposition)
+    qc.h(qreg[2])
+    qc.cx(qreg[1], qreg[2])
+    qc.tdg(qreg[2])
+    qc.cx(qreg[0], qreg[2])
+    qc.t(qreg[2])
+    qc.cx(qreg[1], qreg[2])
+    qc.t(qreg[1])
+    qc.tdg(qreg[2])
+    qc.cx(qreg[0], qreg[2])
+    qc.cx(qreg[0], qreg[1])
+    qc.t(qreg[0])
+    qc.tdg(qreg[1])
+    qc.cx(qreg[0], qreg[1])
+    qc.t(qreg[2])
+    qc.h(qreg[2])
+
+    # Undo oracle prep
+    qc.h(qreg[2])
+    qc.x(qreg[1])
+
+    # ----- Diffuser -----
+    qc.h(qreg)
+    qc.x(qreg)
+    qc.h(qreg[2])
+
+    # CCX again
+    qc.h(qreg[2])
+    qc.cx(qreg[1], qreg[2])
+    qc.tdg(qreg[2])
+    qc.cx(qreg[0], qreg[2])
+    qc.t(qreg[2])
+    qc.cx(qreg[1], qreg[2])
+    qc.t(qreg[1])
+    qc.tdg(qreg[2])
+    qc.cx(qreg[0], qreg[2])
+    qc.cx(qreg[0], qreg[1])
+    qc.t(qreg[0])
+    qc.tdg(qreg[1])
+    qc.cx(qreg[0], qreg[1])
+    qc.t(qreg[2])
+    qc.h(qreg[2])
+
+    # Undo diffuser prep
+    qc.h(qreg[2])
+    qc.x(qreg)
+    qc.h(qreg)
+
 def grover():
     qreg = QuantumRegister(3, "q")
     qc = QuantumCircuit(qreg)
+
+    # Initial superposition
     qc.h(qreg)
-    # Oracle
-    qc.x(qreg[1])
-    qc.h(qreg[2])
-    # CCX
-    qc.h(qreg[2])
-    qc.cx(qreg[1], qreg[2])
-    qc.tdg(qreg[2])
-    qc.cx(qreg[0], qreg[2])
-    qc.t(qreg[2])
-    qc.cx(qreg[1], qreg[2])
-    qc.t(qreg[1])
-    qc.tdg(qreg[2])
-    qc.cx(qreg[0], qreg[2])
-    qc.cx(qreg[0], qreg[1])
-    qc.t(qreg[0])
-    qc.tdg(qreg[1])
-    qc.cx(qreg[0], qreg[1])
-    qc.t(qreg[2])
-    qc.h(qreg[2])
-    #Undo
-    qc.h(qreg[2])
-    qc.x(qreg[1])
-    #Diffuser
-    qc.h(qreg)
-    qc.x(qreg)
-    qc.h(qreg[2])
-    # CCX
-    qc.h(qreg[2])
-    qc.cx(qreg[1], qreg[2])
-    qc.tdg(qreg[2])
-    qc.cx(qreg[0], qreg[2])
-    qc.t(qreg[2])
-    qc.cx(qreg[1], qreg[2])
-    qc.t(qreg[1])
-    qc.tdg(qreg[2])
-    qc.cx(qreg[0], qreg[2])
-    qc.cx(qreg[0], qreg[1])
-    qc.t(qreg[0])
-    qc.tdg(qreg[1])
-    qc.cx(qreg[0], qreg[1])
-    qc.t(qreg[2])
-    qc.h(qreg[2])
-    #Undo
-    qc.h(qreg[2])
-    qc.x(qreg)
-    qc.h(qreg)
+
+    # ---- TWO Grover iterations ----
+    grover_iteration(qc, qreg)
+    grover_iteration(qc, qreg)
 
     return qc
 
@@ -111,7 +124,7 @@ def xor_results(counts, a):
     return out
 
 def print_counts(title, counts):
-    print("\n" + title)
+    print("\n" + title) 
     for s in sorted(counts.keys()):
         print(f"  {s}: {counts[s]}")
 

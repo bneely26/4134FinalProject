@@ -3,14 +3,14 @@ from qiskit_aer import Aer
 from qiskit_aer.noise import NoiseModel, depolarizing_error, ReadoutError, thermal_relaxation_error
 import matplotlib.pyplot as plt
 import random
+import math
+import warnings
 import pandas as pd
+warnings.filterwarnings('ignore')
 
 
-def grover():
-    qreg = QuantumRegister(3, "q")
-    qc = QuantumCircuit(qreg)
-    qc.h(qreg)
 
+def grover_iteration(qc, qreg):
     # Oracle
     qc.x(qreg[1])
     qc.h(qreg[2])
@@ -32,11 +32,11 @@ def grover():
     qc.t(qreg[2])
     qc.h(qreg[2])
 
-    #Undo
+    # Undo oracle prep
     qc.h(qreg[2])
     qc.x(qreg[1])
 
-    #Diffuser
+    # Diffuser
     qc.h(qreg)
     qc.x(qreg)
     qc.h(qreg[2])
@@ -58,13 +58,28 @@ def grover():
     qc.t(qreg[2])
     qc.h(qreg[2])
 
-    #Undo
+    # Undo diffuser prep
     qc.h(qreg[2])
     qc.x(qreg)
     qc.h(qreg)
 
-    return qc
+def grover():
+    qreg = QuantumRegister(3, "q")
+    qc = QuantumCircuit(qreg)
+    
+    # N and M are subject to changed based on the total number of items (N)
+    # and how many items you are looking for (M)
+    N = 8
+    M = 1
+    ideal_runs = math.floor((math.pi/4) * math.sqrt(N/M))
 
+    # Initial superposition
+    qc.h(qreg)
+
+    for i in range(ideal_runs):
+        grover_iteration(qc, qreg)
+
+    return qc
 def KeyH(a, b, idx):
     a[idx], b[idx] = b[idx], a[idx]
 
@@ -126,45 +141,48 @@ def print_counts(title, counts):
         print(f"  {s}: {counts[s]}")
 
 def create_noise_model():
+    ## AI was used to help create the noise models ##
+    ## I used it to combine and add the noise to the qubits ##
+
     noise_model = NoiseModel()
-    
-    # eror rates
-    p_gate1 = 0.001 # .1% for single qubit gates
-    p_gate2 = 0.01  # 1% for multi qubit gates
-    p_meas = 0.02 #2% error for readout
+
+        # Error rates
+    p_gate1 = 0.001  # .1% for single qubit gates
+    p_gate2 = 0.01   # 1% for multi qubit gates
+    p_meas = 0.02    # 2% error for readout
     
     T1s = [60e-6] * 5
     T2s = [100e-6] * 5
 
+    # Create basic depolarizing errors
     error_gate1 = depolarizing_error(p_gate1, 1)
     error_gate2 = depolarizing_error(p_gate2, 2)
 
-    # AI was used here for syntax
+    # Create thermal relaxation errors
     error_1q_thermal = [thermal_relaxation_error(t1, t2, 50e-9)
                         for t1, t2 in zip(T1s, T2s)]
     error_2q_thermal = [thermal_relaxation_error(t1, t2, 300e-9)
                         for t1, t2 in zip(T1s, T2s)]
     
-    # Add errors to single quibit gates
-    noise_model.add_all_qubit_quantum_error(error_gate1, ['h', 'x', 't', 'tdg'])
-
-    # Add thermal errors to single qubit gates
+    # Combine depolarizing and thermal errors for single qubit gates
     for i, err in enumerate(error_1q_thermal):
-        noise_model.add_quantum_error(err, ['h', 'x', 't', 'tdg'], [i])
+        combined_1q = error_gate1.compose(err)
+        noise_model.add_quantum_error(combined_1q, ['h', 'x', 't', 'tdg'], [i])
     
-    # Add errors to control not gate
-    noise_model.add_all_qubit_quantum_error(error_gate2, ['cx'])
-    # Add thermal errors to cx
+    # Combine depolarizing and thermal errors for two-qubit gates
     for i in range(len(T1s) - 1):
-        err2q = error_2q_thermal[i].tensor(error_2q_thermal[i+1])
-        noise_model.add_quantum_error(err2q, ['cx'], [i, i+1])
+        # Tensor product of thermal errors for adjacent qubits
+        err2q_thermal = error_2q_thermal[i].tensor(error_2q_thermal[i+1])
+        # Compose with depolarizing error
+        combined_2q = error_gate2.compose(err2q_thermal)
+        noise_model.add_quantum_error(combined_2q, ['cx'], [i, i+1])
     
-    # adding readout error on measurement
+    # Adding readout error on measurement
     readout_error = ReadoutError([[1 - p_meas, p_meas], [p_meas, 1 - p_meas]])
     noise_model.add_all_qubit_readout_error(readout_error)
     
     return noise_model
-
+    
 def create_plots(decrypted_ideal, decrypted_noisy):
     ## The following method was created with the help of AI ##
     ## All of the code has been reviewed for errors ##
