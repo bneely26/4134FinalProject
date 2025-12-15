@@ -138,6 +138,8 @@ def create_noise_model():
 
     error_gate1 = depolarizing_error(p_gate1, 1)
     error_gate2 = depolarizing_error(p_gate2, 2)
+
+    # AI was used here for syntax
     error_1q_thermal = [thermal_relaxation_error(t1, t2, 50e-9)
                         for t1, t2 in zip(T1s, T2s)]
     error_2q_thermal = [thermal_relaxation_error(t1, t2, 300e-9)
@@ -145,6 +147,7 @@ def create_noise_model():
     
     # Add errors to single quibit gates
     noise_model.add_all_qubit_quantum_error(error_gate1, ['h', 'x', 't', 'tdg'])
+
     # Add thermal errors to single qubit gates
     for i, err in enumerate(error_1q_thermal):
         noise_model.add_quantum_error(err, ['h', 'x', 't', 'tdg'], [i])
@@ -163,6 +166,9 @@ def create_noise_model():
     return noise_model
 
 def create_plots(decrypted_ideal, decrypted_noisy):
+    ## The following method was created with the help of AI ##
+    ## All of the code has been reviewed for errors ##
+
     all_data = pd.read_csv("newData.csv")
 
     ideal = all_data.iloc[:, 0]
